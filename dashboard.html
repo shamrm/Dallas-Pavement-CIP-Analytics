@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dallas Pavement CIP · Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #F3F2F1;
+    --surface:  #FFFFFF;
+    --border:   #EDEBE9;
+    --nav:      #0B2B5C;
+    --text:     #201F1E;
+    --text2:    #605E5C;
+    --text3:    #A19F9D;
+    --accent:   #0078D4;
+    --r:        6px;
+    --shadow:   0 1px 3px rgba(0,0,0,.08), 0 0 1px rgba(0,0,0,.04);
+  }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:"Inter","Segoe UI",system-ui,sans-serif;
+    background:var(--bg); color:var(--text); font-size:13px; line-height:1.5;
+  }
+  .nav {
+    background:var(--nav); height:44px; padding:0 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:200;
+  }
+  .nav-left  { display:flex; align-items:center; gap:10px; }
+  .nav-logo  {
+    width:28px; height:28px; background:rgba(255,255,255,.15);
+    border-radius:4px; display:flex; align-items:center; justify-content:center;
+    font-size:14px; color:#fff; font-weight:700;
+  }
+  .nav-title { color:#fff; font-size:13px; font-weight:600; letter-spacing:.2px; }
+  .nav-right { color:rgba(255,255,255,.5); font-size:11px; }
+  .page-head {
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:14px 24px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .page-head h1 { font-size:17px; font-weight:700; color:var(--text); }
+  .page-head p  { font-size:11px; color:var(--text2); margin-top:1px; }
+  .tag {
+    background:#EBF5FB; color:#1A5276; border:1px solid #AED6F1;
+    border-radius:20px; padding:3px 10px; font-size:10px; font-weight:600;
+    letter-spacing:.4px; text-transform:uppercase;
+  }
+  .wrap { max-width:1600px; margin:0 auto; padding:16px 20px 16px; }
+  .kpi-row { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:14px; }
+  .kpi-card {
+    background:var(--surface); border-radius:var(--r); border-left:3px solid;
+    padding:14px 16px 12px; box-shadow:var(--shadow);
+  }
+  .kpi-label { font-size:10px; font-weight:600; text-transform:uppercase;
+                letter-spacing:.6px; color:var(--text2); margin-bottom:4px; }
+  .kpi-value { font-size:20px; font-weight:700; color:var(--text); line-height:1.1; }
+  .kpi-sub   { font-size:10px; color:var(--text3); margin-top:3px; }
+  .dash-main  { display:grid; grid-template-columns:1fr 320px; gap:10px; margin-bottom:10px; }
+  .card { background:var(--surface); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden; }
+  .card-head {
+    padding:10px 16px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; min-height:38px;
+  }
+  .card-head-title {
+    font-size:10px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.6px; color:var(--text2);
+  }
+  .card-body { padding:4px; }
+  .ctrl-bar {
+    padding:8px 12px; display:flex; align-items:center;
+    justify-content:space-between; flex-wrap:wrap; gap:8px;
+    border-bottom:1px solid var(--border); background:#FAFAF9;
+  }
+  .tog-group { display:flex; align-items:center; gap:6px; }
+  .tog-label { font-size:10px; font-weight:600; text-transform:uppercase;
+                letter-spacing:.5px; color:var(--text3); margin-right:2px; }
+  .tog-btn {
+    padding:4px 10px; border-radius:3px; border:1px solid var(--c);
+    font-size:11px; font-weight:600; cursor:pointer; font-family:inherit;
+    transition:background .12s,color .12s; white-space:nowrap;
+  }
+  .tog-btn.on  { background:var(--c); color:#fff; }
+  .tog-btn.off { background:transparent; color:var(--c); }
+  .tog-btn:hover { opacity:.82; }
+  .tog-count { font-weight:400; opacity:.85; }
+  .search-wrap { position:relative; width:240px; }
+  .search-box  {
+    display:flex; align-items:center; gap:6px;
+    background:#fff; border:1px solid var(--border); border-radius:3px;
+    padding:0 8px; transition:border-color .12s;
+  }
+  .search-box:focus-within { border-color:var(--accent); }
+  .si { color:var(--text3); font-size:12px; }
+  #road-search {
+    flex:1; border:none; outline:none; padding:6px 0;
+    font-size:12px; background:transparent; font-family:inherit; color:var(--text);
+  }
+  #road-search::placeholder { color:var(--text3); }
+  .clear-btn {
+    background:none; border:none; cursor:pointer; color:var(--text3);
+    font-size:11px; padding:2px; line-height:1;
+  }
+  .search-drop {
+    position:absolute; top:calc(100% + 2px); left:0; right:0;
+    background:#fff; border:1px solid var(--border); border-radius:3px;
+    box-shadow:0 4px 16px rgba(0,0,0,.10); z-index:1000;
+    max-height:220px; overflow-y:auto; display:none;
+  }
+  .s-item {
+    padding:7px 10px; cursor:pointer; font-size:12px; font-weight:500;
+    border-bottom:1px solid var(--border); color:var(--text);
+  }
+  .s-item:last-child { border-bottom:none; }
+  .s-item:hover { background:#F8F7F6; }
+  .data-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .data-table thead th {
+    background:var(--nav); color:#fff; padding:8px 12px; text-align:left;
+    font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;
+    position:sticky; top:0; white-space:nowrap;
+  }
+  .data-table tbody tr {
+    border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s;
+  }
+  .data-table tbody tr:hover { background:#EBF3FB; }
+  .data-table tbody td { padding:7px 12px; color:var(--text); }
+  .data-table .td-name { font-weight:600; white-space:nowrap; }
+  .data-table .td-cost { font-weight:600; color:var(--nav); }
+  .data-table .td-lm   { color:var(--text2); }
+  footer {
+    text-align:center; font-size:10px; color:var(--text3); padding:12px 20px 28px;
+  }
+  footer span {
+    background:var(--surface); border-radius:3px; padding:6px 14px;
+    display:inline-block; box-shadow:var(--shadow);
+  }
+  @media (max-width:1100px) {
+    .dash-main { grid-template-columns:1fr; }
+    .kpi-row   { grid-template-columns:repeat(3,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-left">
+    <div class="nav-logo">D</div>
+    <div class="nav-title">City of Dallas &nbsp;·&nbsp; Pavement CIP Analytics</div>
+  </div>
+  <div class="nav-right">113,793 road segments &nbsp;·&nbsp; FY 2026 &nbsp;·&nbsp; Costs: Exhibit A lane-mile rates</div>
+</div>
+
+<div class="page-head">
+  <div>
+    <h1>Pavement Condition &amp; Capital Improvement Program</h1>
+    <p>Road Network Overview &nbsp;·&nbsp; City of Dallas, Texas &nbsp;·&nbsp; Fiscal Year 2026 &nbsp;·&nbsp; Cost basis: FY 2026 Q1 Exhibit A (Transportation &amp; Public Works Program)</p>
+  </div>
+  <span class="tag">FY 2026</span>
+</div>
+
+<div class="wrap">
+
+  <!-- KPI CARDS -->
+  <div class="kpi-row">
+    <div class="kpi-card" style="border-left-color:#C0392B;"><div class="kpi-label">Immediate Action</div><div class="kpi-value">2,298.2 LM</div><div class="kpi-sub">$229,818,300 estimated cost</div></div>
+    <div class="kpi-card" style="border-left-color:#E67E22;"><div class="kpi-label">Schedule Repair</div><div class="kpi-value">5,605.7 LM</div><div class="kpi-sub">$481,900,088 estimated cost</div></div>
+    <div class="kpi-card" style="border-left-color:#27AE60;"><div class="kpi-label">Good Condition</div><div class="kpi-value">5,281.2 LM</div><div class="kpi-sub">No repair action needed</div></div>
+    <div class="kpi-card" style="border-left-color:#95A5A6;"><div class="kpi-label">Inspection Needed</div><div class="kpi-value">2,675.4 LM</div><div class="kpi-sub">No field assessment on record</div></div>
+    <div class="kpi-card" style="border-left-color:#0B2B5C;"><div class="kpi-label">Total Repair Backlog</div><div class="kpi-value">$711,718,388</div><div class="kpi-sub">13,185.0 lane mi · ~12-yr deferred maintenance backlog</div></div>
+    <div class="kpi-card" style="border-left-color:#1A5276;"><div class="kpi-label">FY 2026 Programmed</div><div class="kpi-value">$88.5M</div><div class="kpi-sub">Exhibit A Q1 program · 1,208 projects · 686 lane mi</div></div>
+  </div>
+
+  <!-- MAP + DONUT + TREATMENT -->
+  <div class="dash-main">
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-head-title">Road Condition Map</span>
+      </div>
+      <div class="ctrl-bar">
+        <div class="tog-group">
+          <span class="tog-label">Show</span>
+          <button class="tog-btn on" style="--c:#C0392B" onclick="toggleLayer('High',this)">Immediate Action <span class="tog-count">(5,000)</span></button>
+          <button class="tog-btn on" style="--c:#E67E22" onclick="toggleLayer('Medium',this)">Schedule Repair <span class="tog-count">(5,000)</span></button>
+          <button class="tog-btn off" style="--c:#27AE60" onclick="toggleLayer('Low',this)">Good Condition <span class="tog-count">(3,000)</span></button>
+        </div>
+        <div class="search-wrap">
+          <div class="search-box">
+            <span class="si">&#128269;</span>
+            <input id="road-search" type="text" placeholder="Search road…"
+                   oninput="onSearch(this.value)" autocomplete="off">
+            <button class="clear-btn" onclick="clearSearch()" title="Clear">&#10005;</button>
+          </div>
+          <div id="search-drop" class="search-drop"></div>
+        </div>
+      </div>
+      <div class="card-body" style="position:relative;">
+        <div id="map-loading" style="position:absolute;inset:0;display:flex;align-items:center;
+             justify-content:center;background:#f1f4f8;z-index:10;font-size:13px;color:var(--text3);">
+          Loading map data…
+        </div>
+        <div>                        <script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.5.0.min.js" integrity="sha256-fHbNLP+GlIXN+efbQec78UkemUz3NJp7UmfGxC1tNxs=" crossorigin="anonymous"></script>                <div id="map-chart" class="plotly-graph-div" style="height:540px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("map-chart")) {                    Plotly.newPlot(                        "map-chart",                        [],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"map":{"center":{"lat":32.78,"lon":-96.8},"style":"open-street-map","zoom":10},"margin":{"l":0,"r":0,"t":0,"b":0},"height":540,"paper_bgcolor":"#f1f4f8","showlegend":false},                        {"scrollZoom": true, "responsive": true}                    )                };            </script>        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-head-title">Network Overview &nbsp;·&nbsp; Lane Miles</span>
+        </div>
+        <div class="card-body"><div>                            <div id="b7101d11-ab95-4868-8020-901f30407263" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("b7101d11-ab95-4868-8020-901f30407263")) {                    Plotly.newPlot(                        "b7101d11-ab95-4868-8020-901f30407263",                        [{"customdata":[["Immediate Action"],["Schedule Repair"],["Good Condition"],["Inspection Needed"]],"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hole":0.55,"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003e%{value:,.1f} lane mi (%{percent})\u003cextra\u003e\u003c\u002fextra\u003e","labels":["Immediate Action","Schedule Repair","Good Condition","Inspection Needed"],"legendgroup":"","marker":{"colors":["#C0392B","#E67E22","#27AE60","#95A5A6"]},"name":"","showlegend":true,"values":{"dtype":"f8","bdata":"4J4A7lH0oUBi5CBGsuW1QOirhr4qobRASpCnBNHmpEA="},"type":"pie","textinfo":"percent+label","textposition":"outside"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"legend":{"tracegroupgap":0},"margin":{"t":10,"b":10,"l":10,"r":10},"height":360,"showlegend":false,"paper_bgcolor":"white"},                        {"responsive": true}                    )                };            </script>        </div></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-head-title">Lane Miles by Treatment Type</span>
+        </div>
+        <div class="card-body"><div>                            <div id="20cee8bc-35f7-4b8e-958b-4a3dc4af405c" class="plotly-graph-div" style="height:280px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("20cee8bc-35f7-4b8e-958b-4a3dc4af405c")) {                    Plotly.newPlot(                        "20cee8bc-35f7-4b8e-958b-4a3dc4af405c",                        [{"cliponaxis":false,"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003e%{x:,.1f} lane miles\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":["#C0392B","#C0392B","#E67E22","#BDC3C7","#27AE60","#95A5A6"]},"orientation":"h","text":["907","1,391","2,189","2,675","3,417","5,281"],"textposition":"outside","x":{"dtype":"f8","bdata":"CfKUIA9XjEC8xLZLHL2VQE4k40QCGaFASpCnBNHmpEB2pF5HYrKqQOirhr4qobRA"},"y":["Full Reconstruction","Major Rehabilitation","Surface Resurfacing","Pending Inspection","Preventive Treatment","No Action Required"],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"margin":{"t":6,"b":4,"l":0,"r":60},"xaxis":{"tickfont":{"size":10},"title":{"text":"Lane Miles"},"gridcolor":"#F0F0F0","zeroline":false},"yaxis":{"tickfont":{"size":10}},"height":280,"plot_bgcolor":"white","paper_bgcolor":"white"},                        {"responsive": true}                    )                };            </script>        </div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BAR CHART + SHAP -->
+  <div style="display:grid;grid-template-columns:3fr 2fr;gap:10px;margin-bottom:10px;">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-head-title">Estimated Repair Cost by Council District</span>
+        <span style="font-size:10px;color:var(--text3);">Click a bar to zoom map</span>
+      </div>
+      <div class="card-body"><div>                            <div id="bar-chart" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("bar-chart")) {                    Plotly.newPlot(                        "bar-chart",                        [{"hovertemplate":"Condition=Immediate Action\u003cbr\u003eCouncil District=%{x}\u003cbr\u003eEstimated Cost ($)=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Immediate Action","marker":{"color":"#C0392B","pattern":{"shape":""}},"name":"Immediate Action","orientation":"v","showlegend":true,"textposition":"auto","x":["D1","D2","D3","D4","D5","D6","D7","D8","D9","D10","D11","D12","D13","D14"],"xaxis":"x","y":{"dtype":"f8","bdata":"mpmZGc2lakFLfjFLdZNtQRhL\u002fuUDT2VBcT3K+VeTdEFSuB4g6MJuQWPJ70ZA23FBMzMzsTP2akFPG2gWSzFmQYmICIuZyHdB7+5urClda0G\u002fWPJMAA9wQeUXS\u002ffkb15Bpw30oozGe0GdNtCvsDZqQQ=="},"yaxis":"y","type":"bar"},{"hovertemplate":"Condition=Schedule Repair\u003cbr\u003eCouncil District=%{x}\u003cbr\u003eEstimated Cost ($)=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Schedule Repair","marker":{"color":"#E67E22","pattern":{"shape":""}},"name":"Schedule Repair","orientation":"v","showlegend":true,"textposition":"auto","x":["D1","D2","D3","D4","D5","D6","D7","D8","D9","D10","D11","D12","D13","D14"],"xaxis":"x","y":{"dtype":"f8","bdata":"nT\u002fLsxiWfUGED37\u002f7YqBQWPAtAQpD35BGEv+CVQ2gUGrmLQNv5l9QWvWtZWg9IRBTUjPDZTGgEEsAsECZdx3QbLbnEkk5YFB8biMHvvfgkHzcDQsSLV7QRS3wi2ihnxBj8swZx2xh0EgYf8vx1F4QQ=="},"yaxis":"y","type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":""},"categoryorder":"array","categoryarray":["D13","D6","D9","D4","D10","D2","D7","D5","D11","D1","D3","D14","D12","D8"]},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Estimated Cost ($)"},"tickprefix":"$","tickformat":",.0f","gridcolor":"#f0f0f0"},"legend":{"title":{"text":""},"tracegroupgap":0,"font":{"size":12},"orientation":"h","y":-0.25},"margin":{"t":10,"b":10,"l":0,"r":0},"barmode":"relative","height":360,"plot_bgcolor":"white","paper_bgcolor":"white","bargap":0.25},                        {"responsive": true}                    )                };            </script>        </div></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-head">
+        <span class="card-head-title">What Drives Road Deterioration?</span>
+      </div>
+      <div style="padding:10px 16px 4px;font-size:11px;color:var(--text2);
+                  border-bottom:1px solid var(--border);line-height:1.6;">
+        Factors ranked by how strongly they predict a road's condition.
+        <span style="display:inline-block;width:10px;height:10px;
+              background:#0B2B5C;border-radius:2px;margin:0 4px 0 8px;"></span>Time &amp; maintenance history
+        &nbsp;
+        <span style="display:inline-block;width:10px;height:10px;
+              background:#2980B9;border-radius:2px;margin:0 4px 0 4px;"></span>Road characteristics
+      </div>
+      <div class="card-body"><div>                            <div id="bfd6b464-4627-44bc-a09d-e0b37d55047e" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("bfd6b464-4627-44bc-a09d-e0b37d55047e")) {                    Plotly.newPlot(                        "bfd6b464-4627-44bc-a09d-e0b37d55047e",                        [{"cliponaxis":false,"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003eInfluence score: %{x:.1f} \u002f 100\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":["#2980B9","#2980B9","#2980B9","#2980B9","#2980B9","#0B2B5C","#2980B9","#2980B9","#0B2B5C","#0B2B5C"]},"orientation":"h","text":["18","20","20","20","20","22","24","32","40","100"],"textposition":"outside","x":{"dtype":"f8","bdata":"ZmZmZmbmMUAzMzMzM7MzQDMzMzMzMzRAzczMzMxMNEDNzMzMzEw0QJqZmZmZmTVAAAAAAACAOEAzMzMzM7M\u002fQAAAAAAAQERAAAAAAAAAWUA="},"y":["Road Surface Area","Road Classification (Local \u2192 Freeway)","Fcc A35","Road Length","Road Width","Years Since Last Inspection","Council District","Concrete Pavement Type","Road Age (Years Since Built)","Years Since Last Repair"],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"margin":{"t":8,"b":8,"l":0,"r":50},"xaxis":{"tickfont":{"size":10},"title":{"text":"Relative Influence (0 = none, 100 = strongest)"},"gridcolor":"#F0F0F0","range":[0,118],"showgrid":true,"zeroline":false},"yaxis":{"tickfont":{"size":11}},"height":360,"plot_bgcolor":"white","paper_bgcolor":"white"},                        {"responsive": true}                    )                };            </script>        </div></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <div class="card-head">
+      <span class="card-head-title">Priority Roads &nbsp;·&nbsp; Top 50 by Repair Cost</span>
+      <span style="font-size:10px;color:var(--text3);">Click a row to zoom map</span>
+    </div>
+    
+<div style="overflow-x:auto;max-height:380px;overflow-y:auto;">
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Road Name</th><th>From</th><th>To</th><th>District</th>
+      <th>Condition</th><th>Treatment Needed</th>
+      <th>Est. Cost</th><th>Lane Mi.</th><th>PCI</th><th>Last Insp.</th>
+    </tr>
+  </thead>
+  <tbody id="tbl-body">
+<tr data-lat="32.74589" data-lon="-96.97076"><td class="td-name">W Jefferson Blvd</td><td>W Jefferson Blvd</td><td>W Jefferson Blvd</td><td>D3</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$182,047</td><td class="td-lm">1.820</td><td>26</td><td>2025</td></tr>
+<tr data-lat="32.65612" data-lon="-96.64657"><td class="td-name">Jordan Valley Rd</td><td>Palomino Rd</td><td>Middlefield Rd</td><td>D8</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$155,456</td><td class="td-lm">1.555</td><td>15</td><td>2025</td></tr>
+<tr data-lat="32.87204" data-lon="-96.88548"><td class="td-name">Brenner Dr</td><td>Shady Trl</td><td>Harry Hines Blvd</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$148,979</td><td class="td-lm">1.490</td><td>35</td><td>2025</td></tr>
+<tr data-lat="32.87517" data-lon="-96.88489"><td class="td-name">Andjon Dr</td><td>Shady Trl</td><td>Harry Hines Blvd</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$127,569</td><td class="td-lm">1.276</td><td>32</td><td>2025</td></tr>
+<tr data-lat="32.79487" data-lon="-96.73679"><td class="td-name">Tenison Pkwy</td><td>Tenison Pkwy</td><td>Samuell Blvd</td><td>D2</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$127,121</td><td class="td-lm">1.271</td><td>22</td><td>2025</td></tr>
+<tr data-lat="32.90227" data-lon="-96.8522"><td class="td-name">Northaven Rd</td><td>Marsh Ln</td><td>Cox Ln</td><td>D13</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$108,562</td><td class="td-lm">1.086</td><td>20</td><td>2025</td></tr>
+<tr data-lat="32.71373" data-lon="-96.89747"><td class="td-name">Larue St</td><td>Sage Valley Ln</td><td>Knoxville St</td><td>D3</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$96,062</td><td class="td-lm">0.961</td><td>35</td><td>2025</td></tr>
+<tr data-lat="32.88422" data-lon="-96.7653"><td class="td-name">La Sierra Dr</td><td>N Central Serv E</td><td>Manderville Ln</td><td>D13</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$92,115</td><td class="td-lm">0.921</td><td>22</td><td>2025</td></tr>
+<tr data-lat="32.66429" data-lon="-96.61443"><td class="td-name">S Belt Line Rd</td><td>S Belt Line Rd</td><td>Pecan Lake Dr</td><td>D8</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$91,001</td><td class="td-lm">0.910</td><td>36</td><td>2025</td></tr>
+<tr data-lat="32.85936" data-lon="-96.6849"><td class="td-name">Fernald Ave</td><td>A08054</td><td>Jupiter Rd</td><td>D9</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$90,615</td><td class="td-lm">0.906</td><td>39</td><td>2025</td></tr>
+<tr data-lat="32.84767" data-lon="-96.64134"><td class="td-name">Woodmeadow Pkwy</td><td>Woodmeadow Pkwy</td><td>Woodmeadow Pkwy</td><td>D9</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$90,001</td><td class="td-lm">0.900</td><td>38</td><td>2025</td></tr>
+<tr data-lat="32.69283" data-lon="-96.90024"><td class="td-name">Country Creek Dr</td><td>Country Creek Ct</td><td>Joseph Hardin Dr</td><td>D3</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$88,433</td><td class="td-lm">0.884</td><td>33</td><td>2025</td></tr>
+<tr data-lat="32.95668" data-lon="-96.77104"><td class="td-name">Roundrock Rd</td><td>Spring Creek Rd</td><td>Coit Rd</td><td>D11</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$87,728</td><td class="td-lm">0.877</td><td>21</td><td>2025</td></tr>
+<tr data-lat="33.01009" data-lon="-96.7989"><td class="td-name">Lloyd Cir</td><td>Northernmost Dr</td><td>Preston Rd</td><td>D12</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$87,001</td><td class="td-lm">0.870</td><td>39</td><td>2025</td></tr>
+<tr data-lat="32.87547" data-lon="-96.69283"><td class="td-name">Wallbrook Dr</td><td>Rolling Rock Ln</td><td>Wickersham Rd</td><td>D10</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$86,652</td><td class="td-lm">0.867</td><td>38</td><td>2025</td></tr>
+<tr data-lat="32.65513" data-lon="-96.65271"><td class="td-name">Middlefield Rd</td><td>Silver Maple Ln</td><td>Jordan Valley Rd</td><td>D8</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$86,046</td><td class="td-lm">0.860</td><td>38</td><td>2025</td></tr>
+<tr data-lat="32.79033" data-lon="-96.67471"><td class="td-name">Catron Dr</td><td>Catron Dr</td><td>Catron Dr</td><td>D7</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$83,319</td><td class="td-lm">0.833</td><td>35</td><td>2025</td></tr>
+<tr data-lat="32.80022" data-lon="-96.70699"><td class="td-name">El Cerrito Dr</td><td>Claremont Dr</td><td>Rangeway Dr</td><td>D7</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$82,910</td><td class="td-lm">0.829</td><td>28</td><td>2025</td></tr>
+<tr data-lat="32.90728" data-lon="-96.88927"><td class="td-name">Tarna Dr</td><td>Anaheim Dr</td><td>Grissom Ln</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$80,933</td><td class="td-lm">0.809</td><td>37</td><td>2025</td></tr>
+<tr data-lat="32.79035" data-lon="-96.82207"><td class="td-name">Glass St</td><td>Levee St</td><td>Irving Blvd</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$80,728</td><td class="td-lm">0.807</td><td>8</td><td>2025</td></tr>
+<tr data-lat="32.88358" data-lon="-96.77779"><td class="td-name">A08816</td><td>Airline Rd</td><td>Mimosa Ln</td><td>D11</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$79,092</td><td class="td-lm">0.791</td><td>22</td><td>2025</td></tr>
+<tr data-lat="32.90314" data-lon="-96.70559"><td class="td-name">Hillguard Rd</td><td>Chartwell Dr</td><td>Hillguard Rd</td><td>D10</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$78,713</td><td class="td-lm">0.787</td><td>31</td><td>2025</td></tr>
+<tr data-lat="32.77191" data-lon="-96.8702"><td class="td-name">Lone Star Dr</td><td>Terre Colony Ct</td><td>W Commerce St</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$77,349</td><td class="td-lm">0.773</td><td>31</td><td>2025</td></tr>
+<tr data-lat="32.79231" data-lon="-96.82316"><td class="td-name">Oak Lawn Ave</td><td>Levee St</td><td>Irving Blvd</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$76,364</td><td class="td-lm">0.764</td><td>20</td><td>2025</td></tr>
+<tr data-lat="32.87573" data-lon="-96.86797"><td class="td-name">Park Ln</td><td>Dale Crest Dr</td><td>Harwich Dr</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$75,910</td><td class="td-lm">0.759</td><td>36</td><td>2025</td></tr>
+<tr data-lat="32.71057" data-lon="-96.83918"><td class="td-name">Grayson Dr</td><td>Garapan Dr</td><td>S Polk St</td><td>D4</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$74,523</td><td class="td-lm">0.745</td><td>28</td><td>2025</td></tr>
+<tr data-lat="32.7821" data-lon="-96.68479"><td class="td-name">Chariot Dr</td><td>Rothington Rd</td><td>Rothington Rd</td><td>D7</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$74,167</td><td class="td-lm">0.742</td><td>19</td><td>2025</td></tr>
+<tr data-lat="32.89807" data-lon="-96.89596"><td class="td-name">Reeder Rd</td><td>Royal Ln</td><td>Crown Rd</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$74,148</td><td class="td-lm">0.741</td><td>40</td><td>2025</td></tr>
+<tr data-lat="32.77985" data-lon="-96.68036"><td class="td-name">Moberly Ln</td><td>Moberly Ln</td><td>Wilburton Dr</td><td>D7</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$72,887</td><td class="td-lm">0.729</td><td>23</td><td>2025</td></tr>
+<tr data-lat="32.7931" data-lon="-96.82469"><td class="td-name">Riveredge Dr</td><td>Levee St</td><td>Irving Blvd</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$72,819</td><td class="td-lm">0.728</td><td>9</td><td>2025</td></tr>
+<tr data-lat="32.88274" data-lon="-96.77814"><td class="td-name">A08817</td><td>Airline Rd</td><td>Mimosa Ln</td><td>D11</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$72,728</td><td class="td-lm">0.727</td><td>25</td><td>2025</td></tr>
+<tr data-lat="32.84687" data-lon="-96.75873"><td class="td-name">E University Blvd</td><td>Creighton Dr</td><td>Ridgelawn Dr</td><td>D9</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$72,652</td><td class="td-lm">0.727</td><td>33</td><td>2025</td></tr>
+<tr data-lat="32.7989" data-lon="-96.83367"><td class="td-name">Vantage St</td><td>Wycliff Ave</td><td>Eop</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$71,279</td><td class="td-lm">0.713</td><td>27</td><td>2025</td></tr>
+<tr data-lat="32.96966" data-lon="-96.78991"><td class="td-name">Mill Falls Dr</td><td>Robin Willow Dr</td><td>A09532</td><td>D11</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$71,107</td><td class="td-lm">0.711</td><td>24</td><td>2025</td></tr>
+<tr data-lat="32.90431" data-lon="-96.85549"><td class="td-name">Alta Vista Ln</td><td>Marsh Ln</td><td>Cox Ln</td><td>D13</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$71,058</td><td class="td-lm">0.711</td><td>27</td><td>2025</td></tr>
+<tr data-lat="32.84272" data-lon="-96.7592"><td class="td-name">A03835</td><td>Sandhurst Ln</td><td>E University Blvd</td><td>D9</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$70,948</td><td class="td-lm">0.709</td><td>16</td><td>2025</td></tr>
+<tr data-lat="32.90125" data-lon="-96.8554"><td class="td-name">Whitehall Dr</td><td>Marsh Ln</td><td>Cox Ln</td><td>D13</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$70,762</td><td class="td-lm">0.708</td><td>39</td><td>2025</td></tr>
+<tr data-lat="32.84951" data-lon="-96.76279"><td class="td-name">Milton St</td><td>Amesbury Dr</td><td>Birchbrook Dr</td><td>D9</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$70,455</td><td class="td-lm">0.705</td><td>20</td><td>2025</td></tr>
+<tr data-lat="32.90225" data-lon="-96.82241"><td class="td-name">Northaven Rd</td><td>Strait Ln</td><td>Leachman Cir</td><td>D13</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$70,417</td><td class="td-lm">0.704</td><td>37</td><td>2025</td></tr>
+<tr data-lat="32.82837" data-lon="-96.87753"><td class="td-name">Profit Dr</td><td>Profit Dr</td><td>Empress Row</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$70,285</td><td class="td-lm">0.703</td><td>24</td><td>2025</td></tr>
+<tr data-lat="32.90245" data-lon="-96.89022"><td class="td-name">Indian Trl</td><td>Grissom Ln</td><td>Indian Trl</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$70,092</td><td class="td-lm">0.701</td><td>37</td><td>2025</td></tr>
+<tr data-lat="32.90563" data-lon="-96.88804"><td class="td-name">Nova Dr</td><td>Anaheim Dr</td><td>Grissom Ln</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$69,683</td><td class="td-lm">0.697</td><td>34</td><td>2025</td></tr>
+<tr data-lat="32.89715" data-lon="-96.85417"><td class="td-name">Waldorf Dr</td><td>Marsh Ln</td><td>Cox Ln</td><td>D13</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$69,679</td><td class="td-lm">0.697</td><td>25</td><td>2025</td></tr>
+<tr data-lat="32.87816" data-lon="-96.87166"><td class="td-name">Darvany Dr</td><td>Lockmoor Ln</td><td>Dale Crest Dr</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$69,531</td><td class="td-lm">0.695</td><td>26</td><td>2025</td></tr>
+<tr data-lat="32.89615" data-lon="-96.8522"><td class="td-name">Vancouver Dr</td><td>Marsh Ln</td><td>Cox Ln</td><td>D13</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$69,482</td><td class="td-lm">0.695</td><td>32</td><td>2025</td></tr>
+<tr data-lat="32.79868" data-lon="-96.73995"><td class="td-name">Tenison Pkwy</td><td>East Grand Ave</td><td>Tenison Pkwy</td><td>D2</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$69,417</td><td class="td-lm">0.694</td><td>22</td><td>2025</td></tr>
+<tr data-lat="32.82681" data-lon="-96.67029"><td class="td-name">Millmar Dr</td><td>Casa Oaks Dr</td><td>Shiloh Rd</td><td>D2</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$69,069</td><td class="td-lm">0.691</td><td>23</td><td>2025</td></tr>
+<tr data-lat="32.8812" data-lon="-96.79378"><td class="td-name">Stichter Ave</td><td>Tibbs St</td><td>Edgemere Rd</td><td>D13</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$68,592</td><td class="td-lm">0.686</td><td>22</td><td>2025</td></tr>
+<tr data-lat="32.87718" data-lon="-96.86791"><td class="td-name">Kinkaid Dr</td><td>Dale Crest Dr</td><td>Harwich Dr</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Major Rehabilitation</td><td class="td-cost">$68,455</td><td class="td-lm">0.685</td><td>28</td><td>2025</td></tr>
+<tr data-lat="32.87399" data-lon="-96.87729"><td class="td-name">A05834</td><td>A05836</td><td>Eop</td><td>D6</td><td><span style="background:#fde8e8;color:#C0392B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">Immediate Action</span></td><td>Full Reconstruction</td><td class="td-cost">$68,381</td><td class="td-lm">0.684</td><td>8</td><td>2025</td></tr>
+
+  </tbody>
+</table>
+</div>
+  </div>
+
+  <!-- DATA SOURCES -->
+  <div class="card" style="margin-top:10px;">
+    <div style="padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);flex-wrap:wrap;">
+      <span style="font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);white-space:nowrap;">Data Sources</span>
+      <span style="color:var(--border);">|</span>
+      <span style="font-weight:600;color:var(--text);white-space:nowrap;">Cost &amp; Treatment Rates:</span>
+      <a href="https://dallascityhall.com/government/citymanager/Documents/Council%20Materials/C.%20Transportation%20and%20Public%20Works%20Quarterly%20Report%20-%20TRNI%2002172026.pdf"
+         target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;white-space:nowrap;">
+        City of Dallas TPW — FY 2026 Q1 Exhibit A ↗
+      </a>
+      <span style="color:var(--border);">|</span>
+      <span style="font-weight:600;color:var(--text);white-space:nowrap;">Road Network:</span>
+      <a href="https://egisdata-dallasgis.hub.arcgis.com/maps/7daf2cce378b4335b2441096ba23c634/about"
+         target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;white-space:nowrap;">
+        City of Dallas — Street Centerline (ArcGIS Hub) ↗
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span>
+    Cost basis: Exhibit A — FY 2026 Q1 Transportation &amp; Public Works Program (City of Dallas, 02/17/2026) &nbsp;·&nbsp;
+    Full-Depth Asphalt $100,001/LM &nbsp;·&nbsp; Mill &amp; Overlay $174,974/LM &nbsp;·&nbsp;
+    Microsurfacing $28,962/LM &nbsp;·&nbsp; LM = lane miles &nbsp;·&nbsp;
+    Uninspected predictions are indicative only — field inspection required before capital commitment.
+  </span>
+</footer>
+
+<script>
+// ── External data loaded via fetch() ────────────────────────────────────────
+var DISTRICT_BOUNDS   = {};
+var DISTRICT_POLYGONS = {};
+var ROAD_SEARCH       = [];
+var _activeDistrict   = null;
+
+Promise.all([
+  fetch('data/map_data.json').then(function(r)    { return r.json(); }),
+  fetch('data/search_index.json').then(function(r) { return r.json(); }),
+  fetch('data/district_data.json').then(function(r) { return r.json(); })
+]).then(function(results) {
+  var mapData    = results[0];
+  var searchData = results[1];
+  var distData   = results[2];
+
+  ROAD_SEARCH       = searchData;
+  DISTRICT_BOUNDS   = distData.bounds;
+  DISTRICT_POLYGONS = distData.polygons;
+
+  var traces = [];
+  mapData.forEach(function(t) {
+    traces.push({
+      type: 'scattermap', lat: t.lats, lon: t.lons, mode: 'lines',
+      line: {color: t.color, width: t.width},
+      name: t.label, hoverinfo: 'skip',
+      legendgroup: t.priority, visible: t.visible
+    });
+    traces.push({
+      type: 'scattermap', lat: t.h_lats, lon: t.h_lons, mode: 'markers',
+      marker: {size: 15, color: t.color, opacity: 0.01},
+      name: t.label, showlegend: false,
+      legendgroup: t.priority, visible: t.visible,
+      text: t.h_texts, hovertemplate: '%{text}<extra></extra>'
+    });
+  });
+  traces.push({
+    type: 'scattermap', lat: [], lon: [], mode: 'lines',
+    line: {color: '#0B2B5C', width: 2.5},
+    fill: 'toself', fillcolor: 'rgba(11,43,92,0.08)',
+    name: '__district__', showlegend: false, hoverinfo: 'skip', visible: false
+  });
+
+  // Map canvas already initialized by Python-generated base HTML.
+  // Add road traces into the existing empty map.
+  Plotly.addTraces('map-chart', traces);
+
+  document.getElementById('map-loading').style.display = 'none';
+
+  var barDiv = document.getElementById('bar-chart');
+  if (barDiv && barDiv.on) {
+    barDiv.on('plotly_click', function(data) {
+      if (!data.points.length) return;
+      var num = parseInt(data.points[0].x.replace('D', ''));
+      zoomToDistrict(num);
+    });
+  }
+}).catch(function(err) {
+  var el = document.getElementById('map-loading');
+  if (el) el.textContent = 'Error loading map data. Serve the dashboard over HTTP (e.g. GitHub Pages or python -m http.server).';
+  console.error(err);
+});
+
+// ── District zoom ─────────────────────────────────────────────────────────
+function zoomToDistrict(distNum) {
+  var b = DISTRICT_BOUNDS[distNum];
+  var p = DISTRICT_POLYGONS[distNum];
+  if (!b) return;
+  var div = document.getElementById('map-chart');
+
+  if (_activeDistrict === distNum) {
+    _activeDistrict = null;
+    var idx = div.data.findIndex(function(t) { return t.name === '__district__'; });
+    if (idx >= 0) Plotly.restyle(div, {visible: false}, [idx]);
+    return;
+  }
+  _activeDistrict = distNum;
+
+  var clat = (b[0] + b[2]) / 2;
+  var clon = (b[1] + b[3]) / 2;
+  var span = Math.max(b[2] - b[0], b[3] - b[1]);
+  var zoom = span < 0.03 ? 14 : span < 0.07 ? 13 : span < 0.15 ? 12 : 11;
+
+  Plotly.relayout(div, {
+    'map.center': {lat: clat, lon: clon},
+    'map.zoom': zoom
+  });
+
+  var idx = div.data.findIndex(function(t) { return t.name === '__district__'; });
+  if (idx >= 0 && p) {
+    Plotly.restyle(div, {lat: [p.lats], lon: [p.lons], visible: true}, [idx]);
+  }
+}
+
+// ── Toggle layer ──────────────────────────────────────────────────────────
+function toggleLayer(priority, btn) {
+  var div = document.getElementById('map-chart');
+  if (!div || !div.data) return;
+  var isOn = btn.classList.contains('on');
+  var indices = [];
+  div.data.forEach(function(t, i) {
+    if (t.legendgroup === priority) indices.push(i);
+  });
+  Plotly.restyle(div, {visible: !isOn}, indices);
+  btn.classList.toggle('on',  !isOn);
+  btn.classList.toggle('off',  isOn);
+}
+
+// ── Search ────────────────────────────────────────────────────────────────
+var _searchHits = [];
+
+function onSearch(val) {
+  var drop = document.getElementById('search-drop');
+  if (val.length < 2) { drop.style.display = 'none'; return; }
+  var q = val.toUpperCase();
+  _searchHits = ROAD_SEARCH.filter(function(r) {
+    return r[0].indexOf(q) !== -1;
+  }).slice(0, 18);
+  if (!_searchHits.length) { drop.style.display = 'none'; return; }
+
+  drop.innerHTML = _searchHits.map(function(r, i) {
+    return '<div class="s-item" data-i="' + i + '">' + r[0] + '</div>';
+  }).join('');
+
+  drop.onclick = function(e) {
+    var item = e.target.closest('.s-item');
+    if (item) selectRoad(_searchHits[parseInt(item.dataset.i)]);
+  };
+  drop.style.display = 'block';
+}
+
+function selectRoad(road) {
+  var lat = road[1], lon = road[2];
+  var latSpan = road[5] || 0, lonSpan = road[6] || 0;
+  var div = document.getElementById('map-chart');
+  var span = Math.max(latSpan, lonSpan);
+  var zoom = span < 0.002 ? 17 : span < 0.007 ? 16 : span < 0.02 ? 15
+           : span < 0.05  ? 14 : span < 0.12  ? 13 : 12;
+  Plotly.relayout(div, {'map.center': {lat: lat, lon: lon}, 'map.zoom': zoom});
+  document.getElementById('road-search').value = road[0];
+  document.getElementById('search-drop').style.display = 'none';
+}
+
+function clearSearch() {
+  document.getElementById('road-search').value = '';
+  document.getElementById('search-drop').style.display = 'none';
+}
+
+// ── Table row → map zoom ──────────────────────────────────────────────────
+document.getElementById('tbl-body').addEventListener('click', function(e) {
+  var row = e.target.closest('tr');
+  if (!row) return;
+  var lat = parseFloat(row.dataset.lat);
+  var lon = parseFloat(row.dataset.lon);
+  if (isNaN(lat) || isNaN(lon)) return;
+  Plotly.relayout(document.getElementById('map-chart'), {
+    'map.center': {lat: lat, lon: lon}, 'map.zoom': 17
+  });
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.search-wrap'))
+    document.getElementById('search-drop').style.display = 'none';
+});
+</script>
+
+</body>
+</html>
